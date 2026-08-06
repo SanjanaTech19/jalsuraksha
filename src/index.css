@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased font-sans;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Minimalist Marquee animation for Alert Ticker */
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.animate-marquee {
+  display: inline-block;
+  animation: marquee 30s linear infinite;
+  white-space: nowrap;
+}
+
+/* Custom Scrollbar for sleek layout */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+/* Flat minimalist card style: Thin border, no heavy shadow, 12px rounded corners */
+.tactile-card {
+  @apply bg-white rounded-xl border border-slate-200/80 transition-all duration-200;
+}
+
+.tactile-card:hover {
+  @apply border-blue-500/50 bg-slate-50/30;
+}
+
+.tactile-btn {
+  @apply active:scale-95 transition-all duration-150;
+}
+
