@@ -1,451 +1,823 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-// Custom inline SVG icons for guaranteed render with no package issues
-const DropletIcon = () => (
-  <svg className="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
-  </svg>
-);
-
-const FrownIcon = () => (
-  <svg className="w-8 h-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
-
-const ThermometerIcon = () => (
-  <svg className="w-8 h-8 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6a3 3 0 016 0v13M9 10h6m-6 4h6M9 18a3 3 0 01-3-3v-3a3 3 0 013-3m6 9a3 3 0 003-3v-3a3 3 0 00-3-3" />
-  </svg>
-);
-
-const MicrophoneIcon = ({ active }) => (
-  <svg className={`w-8 h-8 ${active ? 'text-white' : 'text-teal-100'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+// Custom inline SVG icons
+const MicIcon = () => (
+  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
     <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
   </svg>
 );
 
-const WifiIcon = () => (
-  <svg className="w-4 h-4 text-emerald-500 mr-1 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M17.778 8.222c-4.296-4.296-11.26-4.296-15.556 0A1 1 0 01.808 6.808c5.076-5.077 13.308-5.077 18.384 0a1 1 0 01-1.414 1.414zM14.95 11.05a7 7 0 00-9.9 0 1 1 0 01-1.414-1.414 9 9 0 0112.728 0 1 1 0 01-1.414 1.414zM12.12 13.88a3 3 0 00-4.24 0 1 1 0 01-1.415-1.413 5 5 0 017.07 0 1 1 0 01-1.414 1.415zM9 17a1 1 0 102 0 1 1 0 00-2 0z" clipRule="evenodd" />
+const CheckCircleIcon = () => (
+  <svg className="w-4 h-4 text-emerald-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
 );
 
-const WifiOffIcon = () => (
-  <svg className="w-4 h-4 text-rose-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M13.477 14.89l2.24 2.24a1 1 0 001.414-1.414l-12-12a1 1 0 00-1.414 1.414l2.09 2.09a9 9 0 0012.728 0c.2-.2.38-.415.544-.64a1 1 0 00-1.614-1.18 7 7 0 01-9.9 0l1.414 1.414a3 3 0 004.24 0l1.414 1.414a1 1 0 001.415-1.414z" clipRule="evenodd" />
+const CloudUploadIcon = () => (
+  <svg className="w-4 h-4 text-amber-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
   </svg>
 );
 
 export default function ASHAView({ addToast, reports, setReports, currentUser, isOnline, setIsOnline }) {
-  
-  // Pending counts for UI badges
-  const [pendingCounts, setPendingCounts] = useState({
-    Diarrhea: 2,
-    Vomiting: 1,
-    Fever: 0,
-  });
+  // Page Sub-Tab: 'logger' vs 'registry'
+  const [activeSubView, setActiveSubView] = useState('logger');
 
-  // Voice recording simulation states
-  const [isListening, setIsListening] = useState(false);
-  const [voiceTranscript, setVoiceTranscript] = useState('');
-
-  // Report Modal states
-  const [activeFormType, setActiveFormType] = useState(null); // 'Diarrhea', 'Vomiting', 'Fever'
+  const [selectedSymptom, setSelectedSymptom] = useState('Diarrhea');
   const [patientName, setPatientName] = useState('');
   const [patientAge, setPatientAge] = useState('');
   const [patientGender, setPatientGender] = useState('Female');
-  const [patientPhone, setPatientPhone] = useState('');
-  const [severity, setSeverity] = useState('Medium');
+  const [villageName, setVillageName] = useState(currentUser?.village || 'Dhemaji');
+  
+  // Real Web Speech API & Transcriber States
+  const [isRecording, setIsRecording] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [dictationLang, setDictationLang] = useState('en-IN');
+  const [recognitionInstance, setRecognitionInstance] = useState(null);
+  const [simulatedScenarioIndex, setSimulatedScenarioIndex] = useState(0);
 
-  // Triggered when clicking a symptom reporter card
-  const handleCardClick = (type) => {
-    setActiveFormType(type);
-    // Pre-populate with typical mock values for demo speed, but allow edits
-    const mockNames = ['Ramesh Kumar', 'Sunita Devi', 'Karan Sharma', 'Anjali Patil'];
-    setPatientName(mockNames[Math.floor(Math.random() * mockNames.length)]);
-    setPatientAge(Math.floor(Math.random() * 50) + 15);
-    setPatientPhone('98765' + Math.floor(Math.random() * 90000 + 10000));
-    setSeverity('Medium');
+  // Detailed Patient Health Records Database
+  const [patientRecords, setPatientRecords] = useState([
+    {
+      id: 'PAT-101',
+      name: 'Rajesh Kumar',
+      age: 45,
+      gender: 'Male',
+      village: 'Dhemaji',
+      houseNo: 'House #14',
+      phone: '+91 98123 45678',
+      symptom: 'Diarrhea',
+      severity: 'Moderate',
+      temp: '99.8°F',
+      pulse: '78 bpm',
+      hydration: 'Mild Dehydration',
+      waterSource: 'Tap Water (Subansiri Intake)',
+      loggedAt: 'Today, 10:15 AM',
+      workerName: 'Sunita Devi',
+      status: 'Medical Kit Dispatched',
+      synced: true,
+      notes: 'Administered 2 packets of ORS. Advised boiling drinking water for 10 minutes.'
+    },
+    {
+      id: 'PAT-102',
+      name: 'Sita Devi',
+      age: 38,
+      gender: 'Female',
+      village: 'Bordumsa',
+      houseNo: 'House #22',
+      phone: '+91 98234 56789',
+      symptom: 'Vomiting',
+      severity: 'Severe',
+      temp: '101.2°F',
+      pulse: '92 bpm',
+      hydration: 'Severe Dehydration',
+      waterSource: 'Open Reservoir',
+      loggedAt: 'Today, 08:30 AM',
+      workerName: 'Priya Patel',
+      status: 'Pending',
+      synced: true,
+      notes: 'Nausea onset after consuming untreated well water. Requires IV fluid assessment.'
+    },
+    {
+      id: 'PAT-103',
+      name: 'Bablu Sharma',
+      age: 52,
+      gender: 'Male',
+      village: 'Subansiri',
+      houseNo: 'House #08',
+      phone: '+91 98345 67890',
+      symptom: 'Fever',
+      severity: 'Mild',
+      temp: '100.4°F',
+      pulse: '80 bpm',
+      hydration: 'Normal',
+      waterSource: 'Boiled Tap Water',
+      loggedAt: 'Yesterday, 04:45 PM',
+      workerName: 'Sunita Devi',
+      status: 'Resolved',
+      synced: true,
+      notes: 'Paracetamol 500mg administered. Patient recovering well.'
+    },
+    {
+      id: 'PAT-104',
+      name: 'Anita Gogoi',
+      age: 26,
+      gender: 'Female',
+      village: 'Namsai',
+      houseNo: 'House #41',
+      phone: '+91 98456 78901',
+      symptom: 'Diarrhea',
+      severity: 'Moderate',
+      temp: '98.6°F',
+      pulse: '74 bpm',
+      hydration: 'Mild Dehydration',
+      waterSource: 'Unfiltered Pipe Water',
+      loggedAt: 'Today, 07:10 AM',
+      workerName: 'Rita Saikia',
+      status: 'Pending',
+      synced: false,
+      notes: 'Buffered locally during forest visit. Sync queue active.'
+    }
+  ]);
+
+  // Selected patient for modal details drawer
+  const [selectedPatientCard, setSelectedPatientCard] = useState(null);
+
+  // Search & Filter state for Patient Registry
+  const [registrySearch, setRegistrySearch] = useState('');
+  const [registrySymptomFilter, setRegistrySymptomFilter] = useState('All');
+
+  // Initialize Web Speech API instance on component mount
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+
+        recognition.onstart = () => {
+          setIsRecording(true);
+          setVoiceTranscript('🎙️ Listening to microphone... Speak patient name, age, and symptoms clearly.');
+        };
+
+        recognition.onresult = (event) => {
+          let currentTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
+          }
+          setVoiceTranscript(`"${currentTranscript}"`);
+          parseSpokenTranscript(currentTranscript);
+        };
+
+        recognition.onerror = (event) => {
+          console.warn('Speech recognition fallback notice:', event.error);
+          setIsRecording(false);
+        };
+
+        recognition.onend = () => {
+          setIsRecording(false);
+        };
+
+        setRecognitionInstance(recognition);
+      } catch (err) {
+        console.warn("Web Speech API not supported in browser, using smart simulation mode.");
+      }
+    }
+  }, []);
+
+  // Intelligent Spoken Text Parser
+  const parseSpokenTranscript = (text) => {
+    if (!text) return;
+    const lower = text.toLowerCase();
+
+    if (lower.includes('diarrhea') || lower.includes('loose motion') || lower.includes('watery') || lower.includes('ডায়রিয়া')) {
+      setSelectedSymptom('Diarrhea');
+    } else if (lower.includes('vomit') || lower.includes('nausea') || lower.includes('বমি')) {
+      setSelectedSymptom('Vomiting');
+    } else if (lower.includes('fever') || lower.includes('temperature') || lower.includes('bukhar') || lower.includes('জ্বর')) {
+      setSelectedSymptom('Fever');
+    }
+
+    if (lower.includes('female') || lower.includes('woman') || lower.includes('girl') || lower.includes('mrs') || lower.includes('ms')) {
+      setPatientGender('Female');
+    } else if (lower.includes('male') || lower.includes('man') || lower.includes('boy') || lower.includes('mr')) {
+      setPatientGender('Male');
+    }
+
+    const ageMatch = text.match(/\b([1-9][0-9]?)\b/);
+    if (ageMatch && parseInt(ageMatch[1]) < 110) {
+      setPatientAge(ageMatch[1]);
+    }
+
+    const patientNameMatch = text.match(/patient\s+([A-Z][a-z]+\s+[A-Z][a-z]+|[A-Z][a-z]+)/i);
+    if (patientNameMatch) {
+      const extracted = patientNameMatch[1].replace(/years|old|male|female|suffering|from|in|with|complaining/gi, '').trim();
+      if (extracted.length > 2) {
+        setPatientName(extracted);
+      }
+    }
   };
 
-  // Submit quick report logic
-  const handleFormSubmit = (e) => {
+  // Sample scenarios for fallback simulation if browser mic is unavailable or denied
+  const sampleScenarios = [
+    { name: 'Sita Devi', age: '38', gender: 'Female', symptom: 'Diarrhea', text: `Patient Sita Devi, 38 years female, suffering from severe Diarrhea in ${villageName}` },
+    { name: 'Bablu Sharma', age: '52', gender: 'Male', symptom: 'Fever', text: `Patient Bablu Sharma, 52 years male, complaining of high Fever` },
+    { name: 'Anita Gogoi', age: '26', gender: 'Female', symptom: 'Vomiting', text: `Patient Anita Gogoi, 26 years female, severe Vomiting cases in ${villageName}` }
+  ];
+
+  // Primary Voice Recording Trigger
+  const handleVoiceRecord = () => {
+    if (isRecording) {
+      if (recognitionInstance) {
+        try { recognitionInstance.stop(); } catch(e) {}
+      }
+      setIsRecording(false);
+      return;
+    }
+
+    if (recognitionInstance) {
+      try {
+        recognitionInstance.lang = dictationLang;
+        recognitionInstance.start();
+        return;
+      } catch (err) {
+        console.warn("Direct microphone access deferred, running smart voice transcriber simulation.");
+      }
+    }
+
+    setIsRecording(true);
+    setVoiceTranscript('🎙️ Listening... Speak patient symptoms clearly.');
+
+    setTimeout(() => {
+      const currentSample = sampleScenarios[simulatedScenarioIndex];
+      setVoiceTranscript(`"${currentSample.text}"`);
+      setPatientName(currentSample.name);
+      setPatientAge(currentSample.age);
+      setPatientGender(currentSample.gender);
+      setSelectedSymptom(currentSample.symptom);
+      
+      setSimulatedScenarioIndex((prev) => (prev + 1) % sampleScenarios.length);
+      setIsRecording(false);
+      addToast(`🎙️ Voice transcriber auto-filled form for ${currentSample.name}.`);
+    }, 2200);
+  };
+
+  // Handle Form Submission
+  const handleSubmitReport = (e) => {
     e.preventDefault();
     if (!patientName.trim()) return;
 
+    const newReportId = `PAT-${Math.floor(100 + Math.random() * 900)}`;
+
     const newReport = {
       id: Date.now(),
-      patient: patientName,
-      symptom: activeFormType,
+      patient: `${patientName} (${patientAge || '30'}${patientGender.charAt(0)})`,
+      symptom: selectedSymptom,
       time: 'Just now',
       synced: isOnline,
       workerName: currentUser?.name || 'Sunita Devi',
       status: 'Pending'
     };
 
-    // Add to top of reports log
+    const newDetailedRecord = {
+      id: newReportId,
+      name: patientName,
+      age: patientAge || 30,
+      gender: patientGender,
+      village: villageName,
+      houseNo: `House #${Math.floor(1 + Math.random() * 50)}`,
+      phone: '+91 98' + Math.floor(10000000 + Math.random() * 90000000),
+      symptom: selectedSymptom,
+      severity: selectedSymptom === 'Diarrhea' ? 'Moderate' : 'Mild',
+      temp: '99.4°F',
+      pulse: '80 bpm',
+      hydration: selectedSymptom === 'Diarrhea' ? 'Mild Dehydration' : 'Normal',
+      waterSource: 'Tap Water (Subansiri Intake)',
+      loggedAt: 'Just now',
+      workerName: currentUser?.name || 'Sunita Devi',
+      status: 'Pending',
+      synced: isOnline,
+      notes: `Reported ${selectedSymptom} symptoms. Advised boiling tap water for 10 minutes.`
+    };
+
     setReports([newReport, ...reports]);
+    setPatientRecords([newDetailedRecord, ...patientRecords]);
 
-    // Handle offline sync queues
-    if (!isOnline) {
-      setPendingCounts(prev => ({
-        ...prev,
-        [activeFormType]: prev[activeFormType] + 1
-      }));
-      addToast(`✅ Report saved offline! Will sync when network is available.`);
+    if (isOnline) {
+      addToast(`✅ Submitted & recorded patient details for ${patientName}.`);
     } else {
-      addToast(`🚀 Success! Report for ${patientName} synced immediately to District Hub.`);
+      addToast(`📥 Network Offline! Saved report locally. Will sync on reconnect.`);
     }
 
-    // Reset Form Modal state
-    setActiveFormType(null);
+    setPatientName('');
+    setPatientAge('');
+    setVoiceTranscript('');
   };
 
-  // Voice Report simulation toggle
-  const handleVoiceToggle = () => {
-    if (!isListening) {
-      setIsListening(true);
-      setVoiceTranscript('Listening to patient description...');
-      
-      // Simulate speech-to-text translation after 2.5 seconds
-      setTimeout(() => {
-        setIsListening(false);
-        setVoiceTranscript('Transcribed: "6-year-old child in Ward 3 exhibiting high fever and dehydration. Severe diarrhea for last 12 hours."');
-        
-        // Open Report form pre-filled with transcribed details
-        setActiveFormType('Diarrhea');
-        setPatientName('Aarav Singh (Ward 3)');
-        setPatientAge('6');
-        setPatientGender('Male');
-        setSeverity('High');
-        
-        addToast('🎙️ Voice input transcribed! Please confirm the report.');
-      }, 2500);
-    } else {
-      setIsListening(false);
-      setVoiceTranscript('');
-    }
-  };
-
-  // Clear pending badge counts simulating an offline force sync
-  const forceManualSync = () => {
-    if (!isOnline) {
-      addToast('⚠️ Cannot sync. System is currently OFFLINE.');
-      return;
-    }
-    
-    // Check if there are any reports that are currently pending sync
-    const hasPending = reports.some(r => !r.synced);
-    if (!hasPending && pendingCounts.Diarrhea === 0 && pendingCounts.Vomiting === 0 && pendingCounts.Fever === 0) {
-      addToast('ℹ️ All reports are already synced.');
+  // Trigger manual sync for offline queued items
+  const handleManualSync = () => {
+    const unsyncedCount = reports.filter(r => !r.synced).length;
+    if (unsyncedCount === 0) {
+      addToast(`ℹ️ All reports are already synced to the District Command Hub.`);
       return;
     }
 
-    // Update state to set all reports as synced
-    const updatedReports = reports.map(r => ({ ...r, synced: true }));
-    setReports(updatedReports);
-    setPendingCounts({ Diarrhea: 0, Vomiting: 0, Fever: 0 });
-    addToast('🔄 Sync Complete! 5 pending offline reports sent to server.');
+    setReports(prev => prev.map(r => ({ ...r, synced: true })));
+    setPatientRecords(prev => prev.map(r => ({ ...r, synced: true })));
+    addToast(`🚀 Synced ${unsyncedCount} buffered offline reports to District Officer!`);
   };
 
-  // Formatting date dynamically (DD MMM YYYY)
-  const getFormattedDate = () => {
-    const d = new Date();
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${d.getDate().toString().padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
-  };
+  // Filtered Patient Registry List
+  const filteredPatientRecords = patientRecords.filter((rec) => {
+    const matchesSearch = rec.name.toLowerCase().includes(registrySearch.toLowerCase()) || 
+                          rec.village.toLowerCase().includes(registrySearch.toLowerCase()) ||
+                          rec.id.toLowerCase().includes(registrySearch.toLowerCase());
+    const matchesSymptom = registrySymptomFilter === 'All' || rec.symptom === registrySymptomFilter;
+    return matchesSearch && matchesSymptom;
+  });
 
   return (
-    <div className="flex flex-col space-y-6 pb-20">
+    <div className="space-y-6 max-w-6xl mx-auto pb-20">
       
-      {/* 1. Header Section */}
-      <header className="flex justify-between items-center bg-white p-5 rounded-xl border border-slate-200/80">
+      {/* 1. Header Card Banner */}
+      <div className="bg-gradient-to-r from-teal-800 via-emerald-700 to-teal-900 text-white p-6 rounded-2xl shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border border-teal-700/40">
         <div>
-          <h1 className="text-2xl font-extrabold text-blue-800 tracking-tight flex items-center gap-1.5">
-            <span className="text-blue-600">Jal</span>Suraksha
+          <span className="text-xs font-bold text-teal-200 uppercase tracking-widest block">ASHA Field Health Hub</span>
+          <h1 className="text-2xl font-black tracking-tight mt-0.5">
+            👩‍⚕️ Welcome, {currentUser?.name || 'Sunita Devi'}
           </h1>
-          <p className="text-xs text-slate-500 font-bold tracking-wide uppercase mt-0.5">
-            Health Worker Hub {currentUser?.name ? `| ${currentUser.name} (${currentUser.village})` : ''}
+          <p className="text-xs font-semibold text-emerald-100 mt-1">
+            Assigned Village: <span className="font-extrabold underline">{villageName}</span> | Sub-Center #12
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          {/* Interactive Network status badge */}
-          <button 
-            onClick={() => {
-              setIsOnline(!isOnline);
-              addToast(isOnline ? "⚠️ System switched to Offline mode. Reports will be queued." : "📶 Back Online! Sync queue ready.");
-            }}
-            className={`flex items-center px-3 py-1.5 rounded-lg text-xs font-bold transition-colors tactile-btn ${
-              isOnline ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
-            }`}
-            title="Click to toggle network simulation"
-          >
-            {isOnline ? <WifiIcon /> : <WifiOffIcon />}
-            {isOnline ? 'ONLINE' : 'OFFLINE'}
-          </button>
-          <span className="text-xs font-bold text-slate-500 mt-1">{getFormattedDate()}</span>
-        </div>
-      </header>
 
-      <section className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-lg font-bold text-slate-800">Quick Symptom Report</h2>
-          {/* Manual sync command button */}
-          <button 
-            onClick={forceManualSync}
-            disabled={!isOnline}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
-              isOnline 
-                ? 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100/50' 
-                : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-            }`}
+        {/* Sync Controls */}
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={handleManualSync}
+            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/30 rounded-xl text-xs font-extrabold transition-all active:scale-95 shadow-2xs flex items-center space-x-1.5 cursor-pointer"
           >
-            Sync Queue
+            <CloudUploadIcon />
+            <span>Sync Queue ({reports.filter(r => !r.synced).length})</span>
           </button>
         </div>
+      </div>
 
-        <div className="grid grid-cols-2 gap-4">
+      {/* 2. Sub-View Navigation Switcher */}
+      <div className="flex items-center space-x-3 border-b border-slate-200/80 pb-2">
+        <button
+          onClick={() => setActiveSubView('logger')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            activeSubView === 'logger'
+              ? 'bg-teal-700 text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          📝 Case Logger & Live Voice Transcriber
+        </button>
+
+        <button
+          onClick={() => setActiveSubView('registry')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            activeSubView === 'registry'
+              ? 'bg-teal-700 text-white shadow-xs'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          📁 Detailed Patient Health Records Registry ({patientRecords.length})
+        </button>
+      </div>
+
+      {/* 3. SUB-VIEW 1: CASE LOGGER & VOICE TRANSCRIBER */}
+      {activeSubView === 'logger' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-fade-in">
           
-          {/* Action 1: Diarrhea */}
-          <button
-            onClick={() => handleCardClick('Diarrhea')}
-            className="flex flex-col items-center justify-between p-5 rounded-xl border text-center transition-all bg-white border-slate-200 hover:border-emerald-500/50 hover:bg-emerald-50/10 active:scale-95 group text-slate-800 min-h-[130px]"
-          >
-            <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
-              <DropletIcon />
-            </div>
-            <div className="mt-2.5">
-              <span className="block font-bold text-base text-slate-800">Report Diarrhea</span>
-              {pendingCounts.Diarrhea > 0 && (
-                <span className="inline-block mt-1 text-[11px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md">
-                  {pendingCounts.Diarrhea} pending
-                </span>
-              )}
-            </div>
-          </button>
-
-          {/* Action 2: Vomiting */}
-          <button
-            onClick={() => handleCardClick('Vomiting')}
-            className="flex flex-col items-center justify-between p-5 rounded-xl border text-center transition-all bg-white border-slate-200 hover:border-amber-500/50 hover:bg-amber-50/10 active:scale-95 group text-slate-800 min-h-[130px]"
-          >
-            <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
-              <FrownIcon />
-            </div>
-            <div className="mt-2.5">
-              <span className="block font-bold text-base text-slate-800">Report Vomiting</span>
-              {pendingCounts.Vomiting > 0 && (
-                <span className="inline-block mt-1 text-[11px] font-extrabold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-md">
-                  {pendingCounts.Vomiting} pending
-                </span>
-              )}
-            </div>
-          </button>
-
-          {/* Action 3: Fever */}
-          <button
-            onClick={() => handleCardClick('Fever')}
-            className="flex flex-col items-center justify-between p-5 rounded-xl border text-center transition-all bg-white border-slate-200 hover:border-rose-500/50 hover:bg-rose-50/10 active:scale-95 group text-slate-800 min-h-[130px]"
-          >
-            <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
-              <ThermometerIcon />
-            </div>
-            <div className="mt-2.5">
-              <span className="block font-bold text-base text-slate-800">Report Fever</span>
-              {pendingCounts.Fever > 0 ? (
-                <span className="inline-block mt-1 text-[11px] font-extrabold bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-md">
-                  {pendingCounts.Fever} pending
-                </span>
-              ) : (
-                <span className="inline-block mt-1 text-[11px] font-bold text-slate-400">
-                  Ready
-                </span>
-              )}
-            </div>
-          </button>
-
-          {/* Action 4: Voice Report */}
-          <button
-            onClick={handleVoiceToggle}
-            className={`flex flex-col items-center justify-between p-5 rounded-xl border text-center transition-all active:scale-95 group min-h-[130px] ${
-              isListening 
-                ? 'bg-blue-800 border-blue-500 text-white' 
-                : 'bg-blue-600 hover:bg-blue-700 border-blue-600 text-white'
-            }`}
-          >
-            <div className={`p-2.5 rounded-lg border ${isListening ? 'bg-blue-900 border-blue-700' : 'bg-blue-700/40 border-blue-500/30'}`}>
-              <MicrophoneIcon active={isListening} />
-            </div>
-            <div className="mt-2.5">
-              <span className="block font-bold text-base">
-                {isListening ? 'Listening...' : 'Voice Report'}
-              </span>
-              <span className="inline-block mt-0.5 text-[11px] font-bold opacity-80">
-                {isListening ? 'Speak now' : 'Tap to Record'}
+          {/* Form Container (7 Columns) */}
+          <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 p-6 space-y-5 shadow-2xs">
+            
+            <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+              <div>
+                <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <span>📝 Log New Patient Symptom Case</span>
+                </h2>
+                <p className="text-xs font-bold text-slate-500">Record clinical symptoms for immediate outbreak tracking</p>
+              </div>
+              
+              <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase ${
+                isOnline ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+              }`}>
+                {isOnline ? 'Direct Upload' : 'Offline Buffer'}
               </span>
             </div>
-          </button>
 
-        </div>
-
-        {/* Voice Transcript Display */}
-        {voiceTranscript && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-900">
-            <div className="flex items-center space-x-2 font-bold mb-1">
-              <span className="h-2 w-2 rounded-full bg-blue-600"></span>
-              <span>Voice Transcriber AI</span>
-            </div>
-            <p className="italic font-medium">"{voiceTranscript}"</p>
-          </div>
-        )}
-      </section>
-
-      {/* 3. Recent Activity List */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold text-slate-800">Recent Outbreak Activity Log</h2>
-        <div className="space-y-3">
-          {reports.map((report, idx) => (
-            <div
-              key={idx}
-              className="flex justify-between items-center p-4 bg-white rounded-xl border border-slate-200"
-            >
-              <div className="flex items-center space-x-3">
-                <div className={`p-2.5 rounded-lg border ${
-                  report.symptom === 'Diarrhea' ? 'bg-emerald-50/50 border-emerald-100 text-emerald-600' :
-                  report.symptom === 'Vomiting' ? 'bg-amber-50/50 border-amber-100 text-amber-600' :
-                  'bg-rose-50/50 border-rose-100 text-rose-600'
-                }`}>
-                  {report.symptom === 'Diarrhea' && <span className="text-lg">💧</span>}
-                  {report.symptom === 'Vomiting' && <span className="text-lg">🤢</span>}
-                  {report.symptom === 'Fever' && <span className="text-lg">🌡️</span>}
-                </div>
+            {/* Real AI Voice Dictation Assistant Panel */}
+            <div className="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 p-5 rounded-2xl text-white space-y-4 shadow-md border border-teal-900/40">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h4 className="font-bold text-slate-800 text-base">{report.patient}</h4>
-                  <div className="flex items-center gap-1.5 text-slate-500 text-sm font-semibold">
-                    <span>{report.symptom}</span>
-                    <span className="h-1 w-1 bg-slate-300 rounded-full"></span>
-                    <span>{report.time}</span>
-                  </div>
+                  <span className="text-xs font-black text-teal-300 block uppercase tracking-wider">
+                    🎙️ AI Speech-To-Form Transcriber
+                  </span>
+                  <span className="text-[11px] text-slate-300 font-medium">
+                    Dictate symptoms verbally to auto-fill patient fields
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <select
+                    value={dictationLang}
+                    onChange={(e) => setDictationLang(e.target.value)}
+                    className="text-xs font-bold bg-white/10 text-white border border-white/20 px-2 py-2 rounded-xl focus:outline-none cursor-pointer"
+                  >
+                    <option value="en-IN" className="text-slate-900 font-bold">English (IN)</option>
+                    <option value="hi-IN" className="text-slate-900 font-bold">Hindi (हिन्दी)</option>
+                    <option value="bn-IN" className="text-slate-900 font-bold">Bengali (বাংলা)</option>
+                    <option value="as-IN" className="text-slate-900 font-bold">Assamese (অসমীয়া)</option>
+                  </select>
+
+                  <button
+                    type="button"
+                    onClick={handleVoiceRecord}
+                    className={`h-11 px-4 rounded-xl text-xs font-black transition-all flex items-center space-x-2 active:scale-95 cursor-pointer ${
+                      isRecording 
+                        ? 'bg-rose-600 text-white animate-pulse shadow-lg shadow-rose-600/40 ring-4 ring-rose-500/20' 
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-900/40'
+                    }`}
+                  >
+                    <MicIcon />
+                    <span>{isRecording ? 'Listening...' : 'Record Voice'}</span>
+                  </button>
                 </div>
               </div>
 
-              {/* Sync Badge */}
-              <span className={`px-2.5 py-1 rounded-md text-xs font-bold border ${
-                report.synced 
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
-                  : 'bg-amber-50 text-amber-700 border-amber-100'
-              }`}>
-                {report.synced ? 'Synced' : 'Pending'}
-              </span>
+              {voiceTranscript && (
+                <div className="p-3.5 bg-white/10 rounded-xl text-xs font-semibold text-teal-100 border border-white/15 animate-fade-in space-y-1">
+                  <span className="text-[10px] uppercase font-black text-teal-400 block">Live Speech Output:</span>
+                  <p className="italic">{voiceTranscript}</p>
+                </div>
+              )}
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* 4. Reporting Modal Overlay / Drawer */}
-      {activeFormType && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-end sm:items-center justify-center p-4 z-50">
-          <div className="bg-white w-full max-w-md rounded-xl border border-slate-200 overflow-hidden">
+            {/* Clinical Form */}
+            <form onSubmit={handleSubmitReport} className="space-y-4">
+              
+              <div className="space-y-2">
+                <label className="block text-xs font-extrabold uppercase text-slate-400 tracking-wider">
+                  Select Primary Symptom
+                </label>
+                
+                <div className="grid grid-cols-3 gap-3">
+                  {['Diarrhea', 'Vomiting', 'Fever'].map((sym) => {
+                    const isSelected = selectedSymptom === sym;
+                    return (
+                      <button
+                        key={sym}
+                        type="button"
+                        onClick={() => setSelectedSymptom(sym)}
+                        className={`p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
+                          isSelected 
+                            ? 'bg-teal-50 border-teal-500 ring-2 ring-teal-500/20 text-teal-950 font-black shadow-2xs' 
+                            : 'bg-white border-slate-200 text-slate-700 font-bold hover:border-slate-300'
+                        }`}
+                      >
+                        <span className="text-xl block mb-1">
+                          {sym === 'Diarrhea' ? '💧' : sym === 'Vomiting' ? '🤢' : '🌡️'}
+                        </span>
+                        <span className="text-xs block">{sym}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-extrabold text-slate-700">Patient Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Ramesh Gogoi"
+                  value={patientName}
+                  onChange={(e) => setPatientName(e.target.value)}
+                  className="w-full h-11 px-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-semibold bg-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-extrabold text-slate-700">Age (Years)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 42"
+                    value={patientAge}
+                    onChange={(e) => setPatientAge(e.target.value)}
+                    className="w-full h-11 px-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-semibold bg-white"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-extrabold text-slate-700">Gender</label>
+                  <select
+                    value={patientGender}
+                    onChange={(e) => setPatientGender(e.target.value)}
+                    className="w-full h-11 px-3.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm font-semibold bg-white cursor-pointer"
+                  >
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full h-12 bg-teal-700 hover:bg-teal-800 text-white font-black text-sm rounded-xl shadow-md shadow-teal-900/20 transition-all active:scale-95 cursor-pointer mt-2"
+              >
+                Submit Clinical Case File
+              </button>
+            </form>
+
+          </div>
+
+          {/* Recent Field Logs Sidebar (5 Columns) */}
+          <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-6 flex flex-col justify-between space-y-4 shadow-2xs">
+            
+            <div className="space-y-3">
+              <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                <div>
+                  <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+                    <span>📋 Recent Case Logbook</span>
+                  </h2>
+                  <p className="text-xs font-bold text-slate-500">Submitted cases & sync status</p>
+                </div>
+
+                <span className="text-[10px] font-black bg-teal-50 text-teal-800 px-2.5 py-1 rounded-md border border-teal-200">
+                  {reports.length} Logs
+                </span>
+              </div>
+
+              <div className="space-y-3 max-h-[440px] overflow-y-auto pr-1">
+                {reports.map((r) => (
+                  <div
+                    key={r.id}
+                    className="p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-all space-y-2 shadow-2xs"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-black text-sm text-slate-900">{r.patient}</span>
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                            {r.symptom}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-extrabold block mt-0.5">
+                          Worker: {r.workerName || 'ASHA'} • {r.time}
+                        </span>
+                      </div>
+
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-black flex items-center ${
+                        r.synced 
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                          : 'bg-amber-50 text-amber-800 border border-amber-200'
+                      }`}>
+                        {r.synced ? <CheckCircleIcon /> : <CloudUploadIcon />}
+                        {r.synced ? 'Synced' : 'Queued'}
+                      </span>
+                    </div>
+
+                    <div className="pt-1.5 border-t border-slate-100 flex justify-between items-center text-[10px] font-bold text-slate-500">
+                      <span>Status: <strong className="text-slate-900">{r.status}</strong></span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center text-[11px] font-bold text-slate-600">
+              🔒 Patient confidentiality protected under National Health Mission guidelines.
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+      {/* 4. SUB-VIEW 2: DETAILED PATIENT HEALTH RECORDS REGISTRY */}
+      {activeSubView === 'registry' && (
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 space-y-5 shadow-2xs animate-fade-in">
+          
+          {/* Header & Filter Controls */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                <span>📁 Patient Medical Records Registry</span>
+              </h2>
+              <p className="text-xs font-bold text-slate-500">Inspect full patient health cards, clinical vitals, and water source telemetry</p>
+            </div>
+
+            {/* Search Input & Symptom Filter */}
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <div className="relative w-full sm:w-64">
+                <input
+                  type="text"
+                  placeholder="Search patient name, ID, or village..."
+                  value={registrySearch}
+                  onChange={(e) => setRegistrySearch(e.target.value)}
+                  className="w-full h-10 pl-9 pr-3.5 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500 bg-slate-50"
+                />
+                <div className="absolute left-3 top-3">
+                  <SearchIcon />
+                </div>
+              </div>
+
+              <select
+                value={registrySymptomFilter}
+                onChange={(e) => setRegistrySymptomFilter(e.target.value)}
+                className="h-10 px-3 rounded-xl border border-slate-200 text-xs font-bold bg-white text-slate-700 cursor-pointer focus:outline-none"
+              >
+                <option value="All">All Symptoms</option>
+                <option value="Diarrhea">Diarrhea</option>
+                <option value="Vomiting">Vomiting</option>
+                <option value="Fever">Fever</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Patient Registry Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-bold">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-400 uppercase text-[10px] tracking-wider">
+                  <th className="py-3 px-3">Patient ID & Name</th>
+                  <th className="py-3 px-3">Demographics</th>
+                  <th className="py-3 px-3">Village / Location</th>
+                  <th className="py-3 px-3">Primary Symptom</th>
+                  <th className="py-3 px-3">Vitals (Temp/Pulse)</th>
+                  <th className="py-3 px-3">Triage Status</th>
+                  <th className="py-3 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredPatientRecords.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="py-8 text-center text-slate-400 font-semibold">
+                      No patient records found matching search criteria.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredPatientRecords.map((patient) => (
+                    <tr 
+                      key={patient.id}
+                      className="hover:bg-slate-50 transition-all text-slate-700 group cursor-pointer"
+                      onClick={() => setSelectedPatientCard(patient)}
+                    >
+                      <td className="py-3.5 px-3">
+                        <span className="block font-black text-slate-900">{patient.name}</span>
+                        <span className="text-[10px] text-teal-700 font-mono font-extrabold">{patient.id}</span>
+                      </td>
+
+                      <td className="py-3.5 px-3 text-slate-600">
+                        {patient.age} Yrs • {patient.gender}
+                      </td>
+
+                      <td className="py-3.5 px-3 text-slate-900">
+                        {patient.village} <span className="text-[10px] text-slate-400 block font-normal">{patient.houseNo}</span>
+                      </td>
+
+                      <td className="py-3.5 px-3">
+                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-black border ${
+                          patient.symptom === 'Diarrhea' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                          patient.symptom === 'Vomiting' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                          'bg-blue-50 text-blue-700 border-blue-200'
+                        }`}>
+                          {patient.symptom}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-3 text-slate-600">
+                        <span>{patient.temp}</span> • <span className="text-slate-400">{patient.pulse}</span>
+                      </td>
+
+                      <td className="py-3.5 px-3">
+                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-black border ${
+                          patient.status === 'Pending' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                          patient.status === 'Medical Kit Dispatched' ? 'bg-blue-50 text-blue-800 border-blue-200' :
+                          'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        }`}>
+                          {patient.status}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-3 text-right">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedPatientCard(patient);
+                          }}
+                          className="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 rounded-lg text-xs font-extrabold transition-all"
+                        >
+                          View Details 🔍
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      )}
+
+      {/* 5. DETAILED PATIENT HEALTH CARD MODAL */}
+      {selectedPatientCard && (
+        <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white w-full max-w-lg rounded-2xl border border-teal-500 p-6 space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             
             {/* Modal Header */}
-            <div className="flex justify-between items-center p-5 border-b border-slate-200">
+            <div className="flex justify-between items-start border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-xl font-bold text-slate-800">
-                  New {activeFormType} Case Report
+                <span className="text-[10px] font-black text-teal-700 font-mono tracking-widest uppercase block">
+                  {selectedPatientCard.id} • Patient Health Card
+                </span>
+                <h3 className="text-xl font-black text-slate-900 mt-0.5">
+                  {selectedPatientCard.name}
                 </h3>
-                <p className="text-xs font-semibold text-slate-500 mt-0.5">Fill patient details to record</p>
               </div>
-              <button 
-                onClick={() => setActiveFormType(null)}
-                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-50 transition-colors"
+
+              <button
+                onClick={() => setSelectedPatientCard(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-black flex items-center justify-center cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            {/* Modal Body Form */}
-            <form onSubmit={handleFormSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-slate-700 text-sm font-bold mb-1.5">Patient Full Name *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Rajesh Meena"
-                  value={patientName}
-                  onChange={(e) => setPatientName(e.target.value)}
-                  className="w-full h-12 px-4 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base font-semibold text-slate-800"
-                />
+            {/* Demographics & Location Grid */}
+            <div className="grid grid-cols-2 gap-3 text-xs font-bold">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <span className="text-[10px] text-slate-400 uppercase font-extrabold block">Age / Gender</span>
+                <span className="text-slate-900 font-black">{selectedPatientCard.age} Years • {selectedPatientCard.gender}</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-700 text-sm font-bold mb-1.5">Age *</label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="e.g. 34"
-                    value={patientAge}
-                    onChange={(e) => setPatientAge(e.target.value)}
-                    className="w-full h-12 px-4 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base font-semibold text-slate-800"
-                  />
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <span className="text-[10px] text-slate-400 uppercase font-extrabold block">Village & House #</span>
+                <span className="text-slate-900 font-black">{selectedPatientCard.village} ({selectedPatientCard.houseNo})</span>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <span className="text-[10px] text-slate-400 uppercase font-extrabold block">Contact Phone</span>
+                <span className="text-slate-900 font-black">{selectedPatientCard.phone}</span>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <span className="text-[10px] text-slate-400 uppercase font-extrabold block">Logged Timestamp</span>
+                <span className="text-slate-900 font-black">{selectedPatientCard.loggedAt}</span>
+              </div>
+            </div>
+
+            {/* Clinical Vitals */}
+            <div className="bg-teal-50/60 p-4 rounded-xl border border-teal-100 space-y-2">
+              <span className="text-xs font-black uppercase text-teal-900 block tracking-wider">
+                🌡️ Clinical Vitals & Water Source Telemetry
+              </span>
+
+              <div className="grid grid-cols-3 gap-2 text-xs font-bold">
+                <div className="bg-white p-2.5 rounded-lg border border-teal-100">
+                  <span className="text-[10px] text-slate-400 block font-extrabold uppercase">Body Temp</span>
+                  <span className="text-rose-600 font-black">{selectedPatientCard.temp}</span>
                 </div>
-                <div>
-                  <label className="block text-slate-700 text-sm font-bold mb-1.5">Gender *</label>
-                  <select
-                    value={patientGender}
-                    onChange={(e) => setPatientGender(e.target.value)}
-                    className="w-full h-12 px-4 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base font-semibold bg-white text-slate-800"
-                  >
-                    <option>Female</option>
-                    <option>Male</option>
-                    <option>Other</option>
-                  </select>
+
+                <div className="bg-white p-2.5 rounded-lg border border-teal-100">
+                  <span className="text-[10px] text-slate-400 block font-extrabold uppercase">Pulse Rate</span>
+                  <span className="text-slate-900 font-black">{selectedPatientCard.pulse}</span>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-slate-700 text-sm font-bold mb-1.5">Contact Number</label>
-                <input
-                  type="tel"
-                  placeholder="10-digit mobile number"
-                  value={patientPhone}
-                  onChange={(e) => setPatientPhone(e.target.value)}
-                  className="w-full h-12 px-4 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base font-semibold text-slate-800"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-700 text-sm font-bold mb-1.5">Symptom Severity</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {['Low', 'Medium', 'High'].map((level) => (
-                    <button
-                      key={level}
-                      type="button"
-                      onClick={() => setSeverity(level)}
-                      className={`h-11 rounded-lg font-bold border transition-all text-sm ${
-                        severity === level 
-                          ? level === 'Low' ? 'bg-emerald-50 border-emerald-500 text-emerald-800' :
-                            level === 'Medium' ? 'bg-amber-50 border-amber-500 text-amber-800' :
-                            'bg-rose-50 border-rose-500 text-rose-800'
-                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {level}
-                    </button>
-                  ))}
+                <div className="bg-white p-2.5 rounded-lg border border-teal-100">
+                  <span className="text-[10px] text-slate-400 block font-extrabold uppercase">Hydration</span>
+                  <span className="text-amber-700 font-black">{selectedPatientCard.hydration}</span>
                 </div>
               </div>
 
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  className="w-full h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-lg font-bold transition-all tactile-btn flex items-center justify-center"
-                >
-                  Submit Report
-                </button>
+              <div className="pt-1 text-xs font-bold text-slate-700">
+                <span className="text-slate-500">Water Source Used: </span>
+                <strong className="text-slate-900">{selectedPatientCard.waterSource}</strong>
               </div>
-            </form>
+            </div>
+
+            {/* Progress Notes */}
+            <div className="space-y-1.5 text-xs font-bold">
+              <span className="text-slate-400 uppercase text-[10px] font-extrabold block">ASHA Progress Notes</span>
+              <p className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-slate-800 leading-relaxed">
+                {selectedPatientCard.notes}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-3 pt-2">
+              <button
+                onClick={() => {
+                  addToast(`🖨️ Printing Health Card for ${selectedPatientCard.name}...`);
+                  window.print();
+                }}
+                className="flex-1 h-11 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-black transition-all cursor-pointer shadow-2xs"
+              >
+                🖨️ Print Health Card
+              </button>
+
+              <button
+                onClick={() => setSelectedPatientCard(null)}
+                className="px-5 h-11 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-extrabold transition-all cursor-pointer border border-slate-200"
+              >
+                Close
+              </button>
+            </div>
+
           </div>
         </div>
       )}

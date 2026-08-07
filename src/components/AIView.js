@@ -30,15 +30,11 @@ export default function AIView() {
   const chartData = useMemo(() => {
     const data = [];
     const basePeakDay = 15; // Mid-month peak
-    // Shift peak and scale cases based on horizon slider
     const shift = horizonMonths * 2; 
     const amplitude = 12 + horizonMonths * 3;
 
     for (let day = 1; day <= 30; day += 2) {
-      // Baseline historical averages (stable curve)
       const baseline = Math.round(15 + 8 * Math.sin((day - 10) / 5));
-      
-      // ST-GNN AI Prediction (dynamic curve shifts depending on timeline selected)
       const gnnTrend = Math.round(
         15 + amplitude * Math.sin((day - basePeakDay + shift) / 4) + (horizonMonths * 1.5)
       );
@@ -48,7 +44,6 @@ export default function AIView() {
         day: `Day ${day}`,
         'Historical Baseline': baseline,
         'ST-GNN AI Prediction': predicted,
-        // The gap represents the innovation: early warning gap
         'Early Warning Gap': Math.max(0, predicted - baseline)
       };
       data.push(dataPoint);
@@ -84,25 +79,38 @@ export default function AIView() {
   }, [horizonMonths, targetDateText]);
 
   return (
-    <div className="flex flex-col space-y-6 pb-20">
+    <div className="flex flex-col space-y-6 max-w-6xl mx-auto pb-20">
       
-      {/* 1. Header Section */}
-      <header className="bg-white p-5 rounded-xl border border-slate-200">
-        <h2 className="text-xl font-extrabold text-slate-800">AI Predictive Outbreak Modeler</h2>
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mt-0.5">Spatiotemporal Graph Neural Network (ST-GNN) analytics</p>
+      {/* 1. Header Banner */}
+      <header className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 rounded-2xl shadow-md border border-indigo-900/40 flex justify-between items-center">
+        <div>
+          <span className="text-xs font-black uppercase text-indigo-400 tracking-wider">Spatiotemporal Deep Learning</span>
+          <h1 className="text-2xl font-black tracking-tight mt-0.5 flex items-center gap-2">
+            <span>🤖</span> AI Outbreak Predictor (ST-GNN Engine)
+          </h1>
+          <p className="text-xs font-bold text-slate-300 mt-1">
+            Simulating downstream water flow vectors & precipitation-driven disease propagation
+          </p>
+        </div>
+
+        <span className="hidden sm:inline-block px-3 py-1.5 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-black">
+          GNN Model v3.2 Active
+        </span>
       </header>
 
-      {/* 2. Interactive Time Slider Control */}
-      <section className="bg-white p-6 rounded-xl border border-slate-200 space-y-4">
+      {/* 2. Interactive Time Horizon Slider Control */}
+      <section className="bg-white p-6 rounded-2xl border border-slate-200/80 space-y-4 shadow-2xs">
         <div className="flex justify-between items-center">
-          <span className="text-base font-bold text-slate-700">Forecast Timeline Horizon</span>
-          <span className="bg-blue-50 text-blue-800 text-xs font-bold px-3 py-1.5 rounded-lg border border-blue-200">
-            {horizonMonths === 0 ? 'Current Status (Now)' : `${horizonMonths} Months Ahead`}
+          <div>
+            <h3 className="text-base font-black text-slate-900">Forecast Timeline Horizon</h3>
+            <p className="text-xs font-bold text-slate-500">Drag slider to project future outbreak probabilities</p>
+          </div>
+          <span className="bg-indigo-50 text-indigo-700 text-xs font-black px-3.5 py-1.5 rounded-xl border border-indigo-200 shadow-2xs">
+            {horizonMonths === 0 ? 'Current Status (Now)' : `+${horizonMonths} Months Ahead`}
           </span>
         </div>
 
-        <div className="space-y-2">
-          {/* Custom styled range slider */}
+        <div className="space-y-3 pt-2">
           <input
             type="range"
             min="0"
@@ -110,9 +118,9 @@ export default function AIView() {
             step="1"
             value={horizonMonths}
             onChange={(e) => setHorizonMonths(parseInt(e.target.value))}
-            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600 focus:outline-none"
+            className="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-none"
           />
-          <div className="flex justify-between text-[11px] font-bold text-slate-400 px-1">
+          <div className="flex justify-between text-[11px] font-black text-slate-400 px-1">
             <span>Now</span>
             <span>+1 Month</span>
             <span>+2 Months</span>
@@ -123,45 +131,46 @@ export default function AIView() {
           </div>
         </div>
 
-        <div className="pt-2 text-center">
-          <p className="text-sm font-bold text-slate-800">
-            Projecting Outbreak Risk Index For: <span className="text-blue-600 underline font-extrabold">{targetDateText}</span>
+        <div className="pt-2 text-center border-t border-slate-100">
+          <p className="text-sm font-black text-slate-800">
+            Projecting Risk Index For: <span className="text-indigo-600 underline font-black">{targetDateText}</span>
           </p>
         </div>
       </section>
 
       {/* 3. Recharts Dual-Line and Area Chart */}
-      <section className="bg-white p-5 rounded-xl border border-slate-200 flex flex-col space-y-4">
+      <section className="bg-white p-6 rounded-2xl border border-slate-200/80 flex flex-col space-y-4 shadow-2xs">
         <div>
-          <h3 className="text-base font-bold text-slate-800">Predicted Case Volumes vs Baseline</h3>
-          <p className="text-xs text-slate-500">
-            Shaded region highlights the <span className="text-rose-600 font-bold">Early Warning Gap</span> (Action Window)
+          <h3 className="text-base font-black text-slate-900">Predicted Case Volumes vs Baseline</h3>
+          <p className="text-xs font-bold text-slate-500">
+            Shaded area highlights the <span className="text-rose-600 font-extrabold">Early Warning Risk Gap</span> (Intervention Window)
           </p>
         </div>
 
-        <div className="w-full h-[280px]">
+        <div className="w-full h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={chartData} margin={{ top: 10, right: 5, bottom: 5, left: -20 }}>
+            <ComposedChart data={chartData} margin={{ top: 10, right: 10, bottom: 5, left: -20 }}>
               <defs>
                 <linearGradient id="warningGapGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.15} />
+                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
                   <stop offset="95%" stopColor="#ef4444" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="day" stroke="#94a3b8" fontSize={11} fontWeight={600} />
-              <YAxis stroke="#94a3b8" fontSize={11} fontWeight={600} />
+              <XAxis dataKey="day" stroke="#94a3b8" fontSize={11} fontWeight={700} />
+              <YAxis stroke="#94a3b8" fontSize={11} fontWeight={700} />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: '#ffffff', 
-                  borderRadius: '8px', 
-                  color: '#1e293b', 
+                  borderRadius: '12px', 
+                  color: '#0f172a', 
                   border: '1px solid #e2e8f0',
                   fontSize: '12px',
-                  fontWeight: '600'
+                  fontWeight: '700',
+                  boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
                 }} 
               />
-              <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: '600' }} />
+              <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: '700' }} />
               
               {/* Shaded Early Warning Gap Area */}
               <Area
@@ -187,9 +196,9 @@ export default function AIView() {
                 type="monotone"
                 dataKey="ST-GNN AI Prediction"
                 stroke="#dc2626"
-                strokeWidth={3}
-                dot={{ r: 3, fill: '#dc2626', strokeWidth: 0 }}
-                activeDot={{ r: 6 }}
+                strokeWidth={3.5}
+                dot={{ r: 4, fill: '#dc2626', strokeWidth: 0 }}
+                activeDot={{ r: 7 }}
               />
             </ComposedChart>
           </ResponsiveContainer>
@@ -197,22 +206,23 @@ export default function AIView() {
       </section>
 
       {/* 4. AI Insight Recommendation Card */}
-      <section className={`p-5 rounded-xl border transition-all duration-300 ${
-        insightDetails.severity === 'critical' ? 'bg-rose-50 border-rose-200 text-rose-950' :
-        insightDetails.severity === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-950' :
-        'bg-blue-50/50 border-blue-200 text-blue-950'
+      <section className={`p-6 rounded-2xl border transition-all duration-300 shadow-2xs ${
+        insightDetails.severity === 'critical' ? 'bg-rose-50/80 border-rose-200 text-rose-950' :
+        insightDetails.severity === 'warning' ? 'bg-amber-50/80 border-amber-200 text-amber-950' :
+        'bg-blue-50/80 border-blue-200 text-blue-950'
       }`}>
-        <div className="flex items-start space-x-3">
-          <div className="text-xl mt-0.5">
+        <div className="flex items-start space-x-4">
+          <div className="text-3xl mt-0.5">
             {insightDetails.severity === 'critical' ? '🆘' :
              insightDetails.severity === 'warning' ? '⚠️' : '📢'}
           </div>
-          <div className="space-y-2">
-            <h4 className="font-extrabold text-base tracking-tight">{insightDetails.title}</h4>
-            <p className="text-sm font-semibold leading-relaxed opacity-90">{insightDetails.message}</p>
-            <div className="mt-3 bg-white p-3.5 rounded-lg border border-slate-200/60">
-              <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1">Recommended Response Action</span>
-              <p className="text-sm font-bold text-slate-800">{insightDetails.recommendation}</p>
+          <div className="space-y-2 flex-1">
+            <h4 className="font-black text-lg tracking-tight">{insightDetails.title}</h4>
+            <p className="text-xs font-bold leading-relaxed opacity-90">{insightDetails.message}</p>
+            
+            <div className="mt-3 bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs">
+              <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Recommended Officer Action</span>
+              <p className="text-xs font-black text-slate-900">{insightDetails.recommendation}</p>
             </div>
           </div>
         </div>

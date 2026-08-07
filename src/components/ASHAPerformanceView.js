@@ -1,259 +1,194 @@
-import React, { useState, useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useState } from 'react';
 
 export default function ASHAPerformanceView({ reports }) {
-  const [selectedWorkerId, setSelectedWorkerId] = useState(1);
+  const [selectedWorker, setSelectedWorker] = useState(null);
 
-  // Mock database of ASHA workers in the district
-  const workers = useMemo(() => [
-    { id: 1, name: "Sunita Devi", village: "Dhemaji", baseReports: 42, activeCases: 4, efficiency: 98, lastSeen: "5 mins ago", status: "Active" },
-    { id: 2, name: "Priya Patel", village: "Namsai", baseReports: 28, activeCases: 2, efficiency: 94, lastSeen: "1 hour ago", status: "Active" },
-    { id: 3, name: "Meena Gogoi", village: "Bordumsa", baseReports: 31, activeCases: 5, efficiency: 91, lastSeen: "2 hours ago", status: "Active" },
-    { id: 4, name: "Rimi Sangma", village: "Haroa", baseReports: 18, activeCases: 1, efficiency: 89, lastSeen: "1 day ago", status: "Offline" },
-    { id: 5, name: "Kiran Bala", village: "Subansiri", baseReports: 12, activeCases: 0, efficiency: 95, lastSeen: "3 days ago", status: "On Leave" }
-  ], []);
+  // Mock list of active ASHA field staff
+  const ashaStaff = [
+    { id: 1, name: 'Sunita Devi', village: 'Dhemaji', assignedCases: 14, accuracy: '98%', syncSpeed: 'Fast (LTE)', status: 'Active' },
+    { id: 2, name: 'Meena Gogoi', village: 'Subansiri', assignedCases: 9, accuracy: '95%', syncSpeed: 'Medium (3G)', status: 'Active' },
+    { id: 3, name: 'Priya Patel', village: 'Bordumsa', assignedCases: 18, accuracy: '92%', syncSpeed: 'Offline Buffer', status: 'In Field' },
+    { id: 4, name: 'Rita Saikia', village: 'Namsai', assignedCases: 6, accuracy: '99%', syncSpeed: 'Fast (LTE)', status: 'Active' },
+    { id: 5, name: 'Anita Das', village: 'Haroa', assignedCases: 12, accuracy: '94%', syncSpeed: 'Fast (LTE)', status: 'Active' }
+  ];
 
-  // Merge the dynamically submitted reports from App.js to calculate real-time stats!
-  const workerStats = useMemo(() => {
-    return workers.map(worker => {
-      // Find reports filed by this worker
-      const customReports = reports.filter(r => r.workerName === worker.name || (worker.name === "Sunita Devi" && !r.workerName));
-      const totalReports = worker.baseReports + customReports.length;
-      
-      return {
-        ...worker,
-        reportsCount: totalReports,
-        recentSubmissions: customReports.map(r => ({
-          patient: r.patient,
-          symptom: r.symptom,
-          time: r.time,
-          synced: r.synced
-        }))
-      };
-    });
-  }, [workers, reports]);
+  const currentWorker = selectedWorker || ashaStaff[0];
 
-  const selectedWorker = useMemo(() => {
-    return workerStats.find(w => w.id === selectedWorkerId) || workerStats[0];
-  }, [workerStats, selectedWorkerId]);
-
-  // Overall District Metrics
-  const summaryMetrics = useMemo(() => {
-    const totalSubmissions = workerStats.reduce((sum, w) => sum + w.reportsCount, 0);
-    const avgEfficiency = Math.round(workerStats.reduce((sum, w) => sum + w.efficiency, 0) / workerStats.length);
-    const activeStaff = workerStats.filter(w => w.status === 'Active').length;
-    return {
-      totalSubmissions,
-      avgEfficiency,
-      activeStaff
-    };
-  }, [workerStats]);
-
-  // Chart Data preparation
-  const chartData = useMemo(() => {
-    return workerStats.map(w => ({
-      name: w.name.split(' ')[0], // just first name for chart fit
-      'Reports Submitted': w.reportsCount,
-      'Efficiency %': w.efficiency
-    }));
-  }, [workerStats]);
+  // Filter reports submitted by current selected worker
+  const workerReports = reports.filter(r => r.workerName?.toLowerCase().includes(currentWorker.name.split(' ')[0].toLowerCase()));
 
   return (
-    <div className="flex flex-col space-y-6 pb-20">
+    <div className="space-y-6 max-w-7xl mx-auto">
       
-      {/* Header section */}
-      <header className="bg-white p-5 rounded-xl border border-slate-200">
-        <h2 className="text-xl font-extrabold text-slate-800">ASHA Performance & Field Logs</h2>
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mt-0.5">District Officer monitoring of rural health worker efficiency</p>
-      </header>
-
-      {/* Summary metrics card grid */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Active Field Staff</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-extrabold text-slate-800">{summaryMetrics.activeStaff} <span className="text-slate-400 font-bold text-sm">/ {workerStats.length}</span></span>
-            <span className="text-xs font-bold text-emerald-600 flex items-center">
-              <span>↑</span> <span className="ml-0.5">Stable</span>
-            </span>
-          </div>
+      {/* 1. Header Banner */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-2xs">
+        <div>
+          <span className="text-xs font-black uppercase text-indigo-600 tracking-wider">Field Personnel Telemetry</span>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5 flex items-center gap-2">
+            <span>👩‍⚕️</span> ASHA Worker Activity & Performance Analytics
+          </h1>
+          <p className="text-xs font-bold text-slate-500 mt-1">
+            Real-time workload metrics, disease reporting accuracy, and offline sync speed auditing.
+          </p>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Reports Monitored</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-extrabold text-slate-800">{summaryMetrics.totalSubmissions}</span>
-            <span className="text-xs font-bold text-blue-600 flex items-center">
-              <span>↑</span> <span className="ml-0.5">Live</span>
-            </span>
-          </div>
+        <div className="flex items-center space-x-3">
+          <span className="bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-black px-3.5 py-1.5 rounded-xl">
+            5 Active Field Staff
+          </span>
         </div>
+      </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Avg. Sync Efficiency</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-extrabold text-slate-800">{summaryMetrics.avgEfficiency}%</span>
-            <span className="text-xs font-bold text-emerald-600 flex items-center">
-              <span>↑</span> <span className="ml-0.5">99% SLA</span>
-            </span>
-          </div>
-        </div>
-      </section>
-
-      {/* Main interactive performance section */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* 2. Top Summary KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         
-        {/* Left Column: Workers Table list */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5 flex flex-col space-y-4">
-          <div>
-            <h3 className="text-base font-bold text-slate-800">Assigned ASHA Health Workers</h3>
-            <p className="text-xs text-slate-500">Select any worker to view their active cases and telemetry logs</p>
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-indigo-500 shadow-2xs">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Cases Logged</span>
+          <h3 className="text-2xl font-black text-slate-900 mt-1">59 Reports</h3>
+          <span className="text-[11px] font-bold text-emerald-600 mt-1 block">↑ 14% increase from last week</span>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-emerald-500 shadow-2xs">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Avg Reporting Accuracy</span>
+          <h3 className="text-2xl font-black text-emerald-600 mt-1">95.6%</h3>
+          <span className="text-[11px] font-bold text-emerald-600 mt-1 block">Verified by clinical labs</span>
+        </div>
+
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 border-t-4 border-t-blue-500 shadow-2xs">
+          <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Sync Latency</span>
+          <h3 className="text-2xl font-black text-blue-600 mt-1">&lt; 4 Minutes</h3>
+          <span className="text-[11px] font-bold text-blue-600 mt-1 block">Auto-flushes on network recovery</span>
+        </div>
+
+      </div>
+
+      {/* 3. Main Content: Staff Table (Left 7 Cols) + Worker Profile Feed (Right 5 Cols) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Active Staff List Table (7 Columns) */}
+        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 p-6 space-y-4 shadow-2xs">
+          <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+            <div>
+              <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <span>📊 Field Staff Directory</span>
+              </h2>
+              <p className="text-xs font-bold text-slate-500">Tap worker row to inspect detailed activity log</p>
+            </div>
+
+            <span className="text-[10px] font-black bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md border border-slate-200">
+              5 Staff Listed
+            </span>
           </div>
 
-          <div className="overflow-x-auto border border-slate-100 rounded-lg">
-            <table className="min-w-full divide-y divide-slate-150 text-left text-xs font-semibold">
-              <thead className="bg-slate-50 text-slate-600 uppercase text-[10px] font-bold tracking-wider">
-                <tr>
-                  <th className="px-4 py-3">ASHA Name</th>
-                  <th className="px-4 py-3">Assigned Village</th>
-                  <th className="px-4 py-3 text-center">Total Reports</th>
-                  <th className="px-4 py-3 text-center">Sync Efficiency</th>
-                  <th className="px-4 py-3">Status</th>
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs font-bold">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-400 uppercase text-[10px] tracking-wider">
+                  <th className="py-3 px-2">ASHA Name</th>
+                  <th className="py-3 px-2">Village</th>
+                  <th className="py-3 px-2">Assigned Cases</th>
+                  <th className="py-3 px-2">Accuracy</th>
+                  <th className="py-3 px-2">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-800 bg-white">
-                {workerStats.map(w => (
-                  <tr 
-                    key={w.id} 
-                    onClick={() => setSelectedWorkerId(w.id)}
-                    className={`cursor-pointer transition-all hover:bg-slate-50/50 ${
-                      selectedWorkerId === w.id ? 'bg-blue-50/40 hover:bg-blue-50/50 border-l-2 border-blue-600' : ''
-                    }`}
-                  >
-                    <td className="px-4 py-3 font-bold text-slate-900">{w.name}</td>
-                    <td className="px-4 py-3">{w.village}</td>
-                    <td className="px-4 py-3 text-center font-extrabold">{w.reportsCount}</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-0.5 rounded border text-[10px] font-bold ${
-                        w.efficiency >= 95 ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                        w.efficiency >= 90 ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                        'bg-amber-50 text-amber-700 border-amber-100'
-                      }`}>
-                        {w.efficiency}%
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`flex items-center gap-1.5 font-bold ${
-                        w.status === 'Active' ? 'text-emerald-600' :
-                        w.status === 'Offline' ? 'text-slate-400' : 'text-amber-500'
-                      }`}>
-                        <span className={`h-2.5 w-2.5 rounded-full ${
-                          w.status === 'Active' ? 'bg-emerald-500' :
-                          w.status === 'Offline' ? 'bg-slate-300' : 'bg-amber-400'
-                        }`}></span>
-                        {w.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+              <tbody className="divide-y divide-slate-100">
+                {ashaStaff.map((worker) => {
+                  const isSelected = currentWorker.id === worker.id;
+                  return (
+                    <tr
+                      key={worker.id}
+                      onClick={() => setSelectedWorker(worker)}
+                      className={`cursor-pointer transition-all ${
+                        isSelected ? 'bg-indigo-50/70 font-black text-indigo-950' : 'hover:bg-slate-50 text-slate-700'
+                      }`}
+                    >
+                      <td className="py-3.5 px-2 flex items-center">
+                        <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 font-black text-xs flex items-center justify-center mr-2.5 border border-slate-200">
+                          {worker.name.charAt(0)}
+                        </div>
+                        <span>{worker.name}</span>
+                      </td>
+                      <td className="py-3.5 px-2 text-slate-600">{worker.village}</td>
+                      <td className="py-3.5 px-2 text-slate-900">{worker.assignedCases} cases</td>
+                      <td className="py-3.5 px-2 text-emerald-600 font-extrabold">{worker.accuracy}</td>
+                      <td className="py-3.5 px-2">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                          worker.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}>
+                          {worker.status}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-
-          {/* Submission volume chart */}
-          <div className="pt-2">
-            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Field Worker Reports Comparison</h4>
-            <div className="w-full h-[180px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -25 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} fontWeight={600} />
-                  <YAxis stroke="#94a3b8" fontSize={10} fontWeight={600} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#ffffff', 
-                      borderRadius: '8px', 
-                      color: '#1e293b', 
-                      border: '1px solid #e2e8f0',
-                      fontSize: '11px',
-                      fontWeight: '600'
-                    }} 
-                  />
-                  <Bar dataKey="Reports Submitted" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={28} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
         </div>
 
-        {/* Right Column: Detailed Worker Performance & logs */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5 flex flex-col space-y-5">
-          <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
-            <div>
-              <h3 className="text-base font-bold text-slate-800">Worker Profile</h3>
-              <p className="text-xs text-slate-500">Live field logs & performance tracking</p>
-            </div>
-            <span className="text-[10px] text-slate-400 font-bold uppercase">Seen: {selectedWorker.lastSeen}</span>
-          </div>
+        {/* Selected Worker Activity Feed (5 Columns) */}
+        <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-6 space-y-4 shadow-2xs flex flex-col justify-between">
+          <div className="space-y-4">
+            
+            <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+              <div>
+                <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <span>👤 Staff Telemetry Profile</span>
+                </h2>
+                <p className="text-xs font-bold text-slate-500">Activity & log submitted by {currentWorker.name}</p>
+              </div>
 
-          {/* Performance profile card */}
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/60 space-y-3 font-semibold text-xs text-slate-600">
-            <div className="flex justify-between">
-              <span>Full Name:</span>
-              <span className="text-slate-800 font-bold">{selectedWorker.name}</span>
+              <span className="text-[10px] font-black bg-indigo-50 text-indigo-700 px-2 py-1 rounded-md border border-indigo-200">
+                {currentWorker.village}
+              </span>
             </div>
-            <div className="flex justify-between">
-              <span>Jurisdiction:</span>
-              <span className="text-slate-800 font-bold">{selectedWorker.village} Block</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Accuracy Index:</span>
-              <span className="text-slate-800 font-bold">99.2% (Audited)</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Active Outbreak Cases:</span>
-              <span className="text-slate-800 font-bold text-rose-600">{selectedWorker.activeCases} active</span>
-            </div>
-          </div>
 
-          {/* Activity Log Feed */}
-          <div className="space-y-3 flex-grow flex flex-col justify-between">
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Worker Activity Feed</h4>
+            {/* Profile Overview Card */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
+              <div className="flex justify-between items-center text-xs font-bold">
+                <span className="text-slate-400 uppercase text-[10px] font-extrabold">Network Sync Speed</span>
+                <span className="text-slate-900 font-black">{currentWorker.syncSpeed}</span>
+              </div>
+              <div className="flex justify-between items-center text-xs font-bold">
+                <span className="text-slate-400 uppercase text-[10px] font-extrabold">Accuracy Score</span>
+                <span className="text-emerald-600 font-black">{currentWorker.accuracy}</span>
+              </div>
+            </div>
+
+            {/* Submitted Reports Feed */}
+            <div className="space-y-2">
+              <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider">Submitted Clinical Reports</h3>
               
-              {selectedWorker.recentSubmissions.length > 0 ? (
-                <div className="space-y-2 max-h-[190px] overflow-y-auto pr-1">
-                  {selectedWorker.recentSubmissions.map((sub, idx) => (
-                    <div key={idx} className="p-3 bg-slate-50/50 border border-slate-100 rounded-lg flex items-center justify-between text-[11px] font-bold">
-                      <div>
-                        <span className="block text-slate-800 text-xs font-extrabold">{sub.patient}</span>
-                        <span className="text-slate-500 block mt-0.5">Symptom: {sub.symptom} | {sub.time}</span>
+              <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+                {workerReports.length === 0 ? (
+                  <div className="p-4 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                    <p className="text-xs font-bold text-slate-400">No recent reports logged by {currentWorker.name}.</p>
+                  </div>
+                ) : (
+                  workerReports.map((r) => (
+                    <div key={r.id} className="p-3 bg-white border border-slate-200 rounded-xl space-y-1 shadow-2xs">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs font-black text-slate-900">{r.patient}</span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
+                          {r.symptom}
+                        </span>
                       </div>
-                      <span className={`px-2 py-0.5 rounded border text-[9px] font-bold ${
-                        sub.synced ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100'
-                      }`}>
-                        {sub.synced ? 'Synced' : 'Pending'}
-                      </span>
+                      <span className="text-[10px] text-slate-400 block">Time: {r.time} | Status: <strong className="text-slate-700">{r.status}</strong></span>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-4 bg-slate-50 border border-slate-150 rounded-lg text-center text-slate-400">
-                  No dynamically submitted logs.
-                </div>
-              )}
+                  ))
+                )}
+              </div>
             </div>
 
-            {/* Response guidelines */}
-            <div className="bg-blue-50/50 border border-blue-200 p-3 rounded-lg text-[11px] font-semibold text-blue-900 leading-relaxed mt-2">
-              💡 **Officer Action Note:** Coordinate MMU vehicles if active cases in {selectedWorker.village} exceed 5, and chlorination supply drops to under 20%.
-            </div>
           </div>
 
+          <div className="bg-indigo-50/60 p-3 rounded-xl border border-indigo-100 text-center text-[11px] font-bold text-indigo-900">
+            ✅ Verified active field responder under National Health Mission telemetry.
+          </div>
         </div>
 
-      </section>
+      </div>
 
     </div>
   );
